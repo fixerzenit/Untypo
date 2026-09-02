@@ -1,0 +1,178 @@
+[
+  {
+    "id": "inter",
+    "family": "Inter",
+    "weights": [
+      300,
+      400,
+      500,
+      700,
+      900
+    ]
+  },
+  {
+    "id": "montserrat",
+    "family": "Montserrat",
+    "weights": [
+      300,
+      400,
+      600,
+      800
+    ]
+  },
+  {
+    "id": "poppins",
+    "family": "Poppins",
+    "weights": [
+      300,
+      400,
+      600,
+      800
+    ]
+  },
+  {
+    "id": "oswald",
+    "family": "Oswald",
+    "weights": [
+      300,
+      400,
+      600,
+      700
+    ]
+  },
+  {
+    "id": "anton",
+    "family": "Anton",
+    "weights": [
+      400
+    ]
+  },
+  {
+    "id": "playfair-display",
+    "family": "Playfair Display",
+    "weights": [
+      400,
+      600,
+      800
+    ]
+  },
+  {
+    "id": "merriweather",
+    "family": "Merriweather",
+    "weights": [
+      300,
+      400,
+      700,
+      900
+    ]
+  },
+  {
+    "id": "lora",
+    "family": "Lora",
+    "weights": [
+      400,
+      500,
+      700
+    ]
+  },
+  {
+    "id": "libre-baskerville",
+    "family": "Libre Baskerville",
+    "weights": [
+      400,
+      700
+    ]
+  },
+  {
+    "id": "cormorant-garamond",
+    "family": "Cormorant Garamond",
+    "weights": [
+      300,
+      400,
+      600,
+      700
+    ]
+  },
+  {
+    "id": "great-vibes",
+    "family": "Great Vibes",
+    "weights": [
+      400
+    ]
+  },
+  {
+    "id": "tangerine",
+    "family": "Tangerine",
+    "weights": [
+      400,
+      700
+    ]
+  },
+  {
+    "id": "pinyon-script",
+    "family": "Pinyon Script",
+    "weights": [
+      400
+    ]
+  },
+  {
+    "id": "dancing-script",
+    "family": "Dancing Script",
+    "weights": [
+      400,
+      500,
+      700
+    ]
+  },
+  {
+    "id": "pacifico",
+    "family": "Pacifico",
+    "weights": [
+      400
+    ]
+  },
+  {
+    "id": "caveat",
+    "family": "Caveat",
+    "weights": [
+      400,
+      500,
+      700
+    ]
+  },
+  {
+    "id": "jetbrains-mono",
+    "family": "JetBrains Mono",
+    "weights": [
+      300,
+      400,
+      700,
+      800
+    ]
+  },
+  {
+    "id": "space-mono",
+    "family": "Space Mono",
+    "weights": [
+      400,
+      700
+    ]
+  },
+  {
+    "id": "roboto-slab",
+    "family": "Roboto Slab",
+    "weights": [
+      300,
+      400,
+      700,
+      900
+    ]
+  },
+  {
+    "id": "alfa-slab-one",
+    "family": "Alfa Slab One",
+    "weights": [
+      400
+    ]
+  }
+]

@@ -1,0 +1,64 @@
+/* ---------------------------------------------------------------------------
+   The shelf, spaced out
+
+   A second layout for the same drawer, for when the folders have to carry more
+   than two digits — a glyph name, a longer mark, anything that will not fit on
+   the plateau at the compact spacing.
+
+   It is a variant and not a replacement, which is why it lives in its own file
+   and switches on one class. Nothing here changes what a folder *is*: the
+   shapes, the colours, the ink, the pull and the shadow all come from the
+   compact rules and stay exactly as they are. What changes is how much of each
+   folder you can see, and therefore how much room there is to write on it.
+
+   TO SWITCH
+     StyleShelf.jsx — set LAYOUT to 'wide'.
+
+   WHAT IT COSTS
+     The lap is what makes a row of ten narrower than ten folders, so opening
+     it up spends the row's width: at the compact spacing a folder shows about
+     ninety per cent of itself, here it shows all of it and the row is the same
+     width, so each folder is a little smaller. That is the trade — more of a
+     smaller folder, which is more writable surface either way because the part
+     the lap was hiding is the part the number sits nearest to.
+--------------------------------------------------------------------------- */
+
+.style-shelf-wide .shelf-tab {
+  /* Ten across with no lap at all: a tenth each, and nothing covering the
+     right-hand end of the one before. */
+  flex: 0 0 9.9%;
+  margin-right: 0;
+}
+
+.style-shelf-wide .shelf-tab:last-child {
+  margin-right: 0;
+}
+
+/* Half a pitch is half of 9.9%, since the pitch and the width are now the
+   same number. */
+.style-shelf-wide .shelf-row-back {
+  transform: translateX(4.95%);
+}
+
+/* And the writing area opens with it. With no folder lapping the right-hand
+   end, the number can use the whole plateau — 30% to 80% of the shape — rather
+   than stopping short of a neighbour. */
+.style-shelf-wide .shelf-mark {
+  left: 26%;
+  right: 16%;
+  font-size: clamp(0.6rem, 0.92vw, 0.88rem);
+  letter-spacing: 0;
+}
+
+@media (max-width: 47.99rem) {
+  .style-shelf-wide .shelf-tab {
+    flex: 0 0 20%;
+    margin-right: 0;
+  }
+  .style-shelf-wide .shelf-row-back {
+    transform: translateX(10%);
+  }
+  .style-shelf-wide .shelf-mark {
+    font-size: clamp(0.5rem, 2.1vw, 0.78rem);
+  }
+}

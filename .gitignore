@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Local secrets: the idea board endpoint and its anon key.
+.env
+.env.local

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Untypo — procedural typography</title>
+    <meta
+      name="description"
+      content="Type a word and get it back in nineteen generative pattern styles, one to a page in a ring binder you turn. Export every variation as SVG, PNG, MP4 or GIF."
+    />
+
+    <!-- The mark, black on red. An SVG favicon because it is geometry rather
+         than a photograph of geometry, so it is crisp at every size a browser
+         asks for and one file covers all of them.
+
+         It, the share card and the masthead are all built from the one
+         src/assets/untypo-logo.svg — see scripts/make-share-png.mjs. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#0b0b0d" />
+
+    <meta property="og:title" content="Untypo" />
+    <meta
+      property="og:description"
+      content="Type a word and get it back in nineteen generative pattern styles."
+    />
+    <meta property="og:type" content="website" />
+    <!-- PNG rather than the SVG the rest of this uses: X, Slack and Facebook
+         all refuse SVG for a link preview. Written by
+         scripts/make-share-png.mjs, from the same mark; public/og.svg is the
+         vector of the identical card. -->
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/og.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

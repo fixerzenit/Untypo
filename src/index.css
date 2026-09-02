@@ -1,0 +1,1418 @@
+@import 'tailwindcss';
+/* The spaced-out drawer. Inert until StyleShelf asks for it. */
+@import './shelf-wide.css';
+
+/* ---------------------------------------------------------------------------
+   The interface face: Google Sans, throughout.
+
+   Every label in this app is now set in it — the wordmark, the name across the
+   page, the tabs down the racks, and the hundred small words on the controls.
+   It is Google's brand typeface, which is why it came out of the interface
+   once; it is back by name, and the files were already vendored here for the
+   artwork.
+
+   Four weights and no more. The chrome uses 400 for its labels, 500 for the
+   two places that are the file's own furniture, and 700 for the page's name;
+   600 is loaded because the picker offers it and a dropped weight would fall
+   back to a synthesised one.
+
+   `swap`, so every label is readable in Arial from the first frame rather than
+   invisible until the file lands. The mono is untouched: numbers and hints are
+   set in it precisely so they do not look like something the user typed, and
+   that distinction is worth more than one face across the whole interface.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Google Sans UI';
+  src: url('/fonts/google-sans-400.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Google Sans UI';
+  src: url('/fonts/google-sans-500.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Google Sans UI';
+  src: url('/fonts/google-sans-600.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Google Sans UI';
+  src: url('/fonts/google-sans-700.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
+   Tokens
+
+   Black on white, one grey for filled surfaces, and a set of flat saturated
+   colours that are never mixed and never shaded — each one belongs to a place
+   rather than to a mood. The footer is blue because it is the footer. That is
+   the whole colour system, and it is what lets a page with no headings still
+   tell you where you are.
+
+   Nothing casts a shadow. Depth here comes from a filled ground against an
+   empty one, which is a flatter and more decisive way of saying the same
+   thing — and it survives being screenshotted, printed or projected, which a
+   two-pixel drop shadow does not.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --color-page: #ffffff;
+  --color-ink: #000000;
+  --color-ink-soft: #55555a;
+  --color-fill: #dedede;
+  --color-fill-soft: #ececec;
+  --color-rule: #000000;
+  --color-rule-soft: #d6d6d6;
+
+  /* Named for the job, not the hue. Adding a section means giving it one of
+     these, which is the point: the colour is the label.
+
+     Each one is paired with the ink that actually survives on it, measured
+     rather than eyeballed. Bright green and yellow take black (9:1 and 20:1);
+     white on that green is 2.3:1, which looks fine in a mockup and is
+     unreadable on a laptop outdoors. The violet is a couple of steps darker
+     than the periwinkle it started as for the same reason — at #7b68ee white
+     came to 4.2:1, just under the line for text this small. */
+  --color-signal-yellow: #ffff00; /* black ink */
+  --color-signal-blue: #0052ff; /* white ink */
+  --color-signal-violet: #5a46e0; /* white ink */
+  --color-signal-green: #00c500; /* black ink */
+  --color-signal-orange: #ff7f00; /* black ink */
+
+  /* Every control is a stadium — radius half its own height, whatever that
+     height turns out to be. A single number does it because 999px always
+     exceeds half of anything here. Larger surfaces get a real corner instead:
+     a stadium the size of a panel reads as a lozenge, not as a panel. */
+  --radius-control: 999px;
+  --radius-field: 20px;
+  /* Thirty per cent of the panel radius, and the same in every direction. */
+  --radius-sheet: 6px;
+  /* The diameter of a punched hole, shared by the eyelets in the paper and the
+     punches in the masthead. They have to be the same hole or the binding
+     stops reading as one. */
+  --hole: 0.42rem;
+
+  --font-sans: 'Google Sans UI', Arial, Helvetica, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  /* Kept as its own name even though it now resolves the same as the sans:
+     the rack's tabs and the page's name are the two places set in it on
+     purpose rather than by inheritance, and they should say so. */
+  --font-label: 'Google Sans UI', Arial, sans-serif;
+
+  /* One curve for everything that moves. Quick out of the gate, long settle —
+     it makes a control feel answered rather than animated. */
+  --ease-snap: cubic-bezier(0.55, 0.08, 0, 1);
+}
+
+/* How far the page sits in from the edge of the desk.
+
+   One number, because three separate things measure from it and they have to
+   agree: the paper, the wires that hold it, and the punches in the masthead
+   the wires run up to. They did not agree. The paper stepped at three widths
+   and the wires at one, so below 1024px the binding ran through the page
+   rather than through its holes — which nobody had noticed because there was
+   nothing at the top of the wire to compare it against until the masthead was
+   punched too. */
+:root {
+  --page-inset: 8.5rem;
+}
+@media (max-width: 63.99rem) {
+  :root {
+    --page-inset: 4.2rem;
+  }
+}
+@media (max-width: 47.99rem) {
+  :root {
+    --page-inset: 2.9rem;
+  }
+}
+
+html {
+  color-scheme: light;
+  /* The interface is sized in rem and the root grows with the window, so the
+     layout is the same picture at every width rather than a different one at
+     each breakpoint. Bounded at both ends: unbounded, a wide monitor gets a
+     poster and a phone gets a footnote. */
+  font-size: clamp(15px, 0.3vw + 13.2px, 18px);
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The wordmark and the style names are set large and light; tightening the
+   tracking as they grow is what keeps them from looking loose. */
+.tracking-display {
+  letter-spacing: -0.025em;
+}
+
+/* The wordmark: the word "typo", set in the interface face.
+
+   It was a mask of the word drawn in Blocks — the app's own output standing in
+   for its name, which was a nice idea and a poor mark. Made of the artwork it
+   changed shape with the artwork's rules, it could not be selected or read by
+   anything but an eye, and at masthead size the blocks were coarse enough that
+   it read as a picture of a word rather than as one.
+
+   Live type instead: selectable, one line of CSS to restyle, and it takes the
+   ink colour the way everything else here does. The file it replaced is kept
+   for the favicon and the card image, where a mark that *is* the artwork is
+   exactly right, because there it is a picture. */
+/* The wordmark is a drawing now, not a setting of the word.
+
+   It was live type — the name set in the interface face — and the note here
+   used to argue that against a mask of the app's own output. A supplied mark
+   settles it: the logo is the app's output, drawn on a grid of squares the way
+   the Blocks style draws, so it is the argument's own conclusion as a file.
+
+   Sized by height and left to find its own width, because the mark has one
+   fixed proportion and the bar has a variable one. It scales with the window
+   like the rest of the display type rather than stepping at a breakpoint. */
+.wordmark {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* The mark's two gaps, made equal.
+ *
+ * To its left is the bar's own padding; to its right was the row gap and
+ * nothing else — 35px on one side and 13px on the other, which reads as the
+ * mark being an ornament stuck to the front of the text field rather than the
+ * thing the bar is named for. The difference is given back as a margin, so the
+ * mark sits in the same measure of air on both sides.
+ *
+ * The two numbers are the rank's own padding (px-5, and lg:px-8 from 64rem up)
+ * less the row's gap (gap-x-3). They are written here rather than derived
+ * because the padding is set in the markup by class; if it moves, this moves.
+ */
+.wordmark {
+  margin-right: calc(1.25rem - 0.75rem);
+}
+
+@media (min-width: 64rem) {
+  .wordmark {
+    margin-right: calc(2rem - 0.75rem);
+  }
+}
+
+.wordmark svg {
+  display: block;
+  /* Two rows of the mark's own grid sit below the baseline — the y and the p —
+     so a height that looks right as a number looks small on the page.
+
+     Half again on the size it was first given, which is what emptying the bar
+     bought. The typeface, the upload and the colour swatch have gone behind
+     Type; five things are left in the rank and the mark is allowed to be the
+     largest of them, which is the one arrangement where a masthead reads as a
+     masthead rather than as a toolbar with a name on the end. */
+  height: clamp(33px, 3.15vw, 51px);
+  width: auto;
+}
+
+/* Display type scales with the window rather than stepping at a breakpoint,
+   which is the whole reason the page reads the same on a laptop and a wall. */
+.type-wordmark {
+  font-size: clamp(30px, 3.1vw, 54px);
+}
+.type-style-name {
+  font-size: clamp(24px, 2vw, 38px);
+}
+
+::selection {
+  background: var(--color-signal-yellow);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Sliders
+
+   A hairline rule with a solid dot riding it. The dot is filled black rather
+   than white-with-a-shadow: on a page where nothing else is raised, a raised
+   knob was the one object pretending to be furniture.
+--------------------------------------------------------------------------- */
+
+input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  /* The drag belongs to the slider, not to the scroller behind it. */
+  touch-action: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The track carries the value: filled behind the thumb, empty ahead of it, so
+   the position is readable without reading the number. `--fill` comes from the
+   component, which is the only place that knows the percentage. */
+input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--sheet-ink, var(--color-ink)) 0 var(--fill, 0%),
+    color-mix(in srgb, var(--sheet-ink, var(--color-ink)) 22%, transparent) var(--fill, 0%) 100%
+  );
+}
+
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--sheet-ink, var(--color-ink));
+  transition: transform 160ms var(--ease-snap);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.35);
+}
+
+input[type='range']::-moz-range-track {
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sheet-ink, var(--color-ink)) 22%, transparent);
+}
+
+/* Firefox fills the track itself, so it needs no percentage passing in. */
+input[type='range']::-moz-range-progress {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--sheet-ink, var(--color-ink));
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sheet-ink, var(--color-ink));
+}
+
+input[type='range']:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+/* ---------------------------------------------------------------------------
+   Colour wells
+--------------------------------------------------------------------------- */
+
+input[type='color'] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type='color']::-webkit-color-swatch,
+input[type='color']::-moz-color-swatch {
+  border: 0;
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------------------
+   Artwork surface
+--------------------------------------------------------------------------- */
+
+.preview-svg > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The artboard is a rounded object floating on the page rather than a framed
+   window cut into it — the same move the reference makes with every image it
+   shows. No hairline: the corner radius is what separates it from the page,
+   and where the artwork's own background matches the page exactly, the shape
+   still reads because the corners do. */
+.artboard {
+  position: relative;
+  border-radius: var(--radius-field);
+  overflow: hidden;
+}
+
+.checkerboard {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, #e4e4e4 25%, transparent 25%),
+    linear-gradient(-45deg, #e4e4e4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e4e4e4 75%),
+    linear-gradient(-45deg, transparent 75%, #e4e4e4 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+/* Everything on the sheet below the punch strip.
+
+   It was the second hinge of the bend once, with its own origin and its own 3D
+   context so a `rotateY` could lift the free corner. That hinge is gone — it
+   clipped, and it hit-tested over its own children — and the two properties it
+   needed outlived it.
+
+   The `transform-style` in particular had to go, and it is worth saying why in
+   the place someone might put it back. A standing 3D context breaks hit
+   testing on every descendant: with it set, a click over a slider is answered
+   by this element instead of by the slider, so every control on the card is
+   dead. It is not a bug to route around, it is what the property does — and
+   nothing here is transformed any more, so there is nothing to compose and no
+   reason to declare one. The page's own turn sets 3D inline, for exactly as
+   long as it is turning; see Rolodex. */
+.leaf-bend {
+  /* Takes what the sheet has left and no more, so everything inside it is
+     bounded and the bottom padding is real rather than notional. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+article {
+  scroll-margin-top: calc(var(--header-h, 6rem) + 1.5rem);
+}
+
+/* ---------------------------------------------------------------------------
+   The file
+
+   One card to a screen, hinged along its top edge. The cards are not in the
+   scroll — a tall track supplies the length and a sticky stage holds every card
+   stacked in the same place, so two of them can share the screen for the length
+   of a turn. See Rolodex.jsx for why that overlap rules out a column of
+   sections.
+--------------------------------------------------------------------------- */
+
+.rolodex {
+  /* A flex child of the page, so its height is whatever is left after the bar
+     and the base. Everything below is a percentage of *that*, which means no
+     part of this has to know how tall either of them is — and a bar that
+     changes height does not move the hinge every card rotates about. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Real snap points on real scrollable length. Nothing captures the wheel:
+     a trackpad, Page Down, the scrollbar and a swipe all work unchanged, and a
+     turn can be stopped half way, which a hijacked gesture cannot do. */
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  /* Black, because you are looking at a close-up of an object on a desk and
+     not at a document. Everything the cards are not is the machine. */
+  background: #0b0b0d;
+}
+.rolodex::-webkit-scrollbar {
+  display: none;
+}
+
+/* How much scrolling one turn costs.
+
+   A stop used to be exactly one stage tall, so a page turned in one screen's
+   worth of wheel and the whole sweep went past in a flick. At 1.9 the same
+   gesture covers about half a turn, which is long enough to watch the bend
+   happen and short enough that twenty-two pages is not a chore. */
+.rolodex {
+  --turn: 1.9;
+}
+
+.rolodex-track {
+  position: relative;
+  height: calc(var(--stops) * var(--turn) * 100%);
+}
+
+.rolodex-stage {
+  position: sticky;
+  top: 0;
+  /* The stage stays one screen whatever the turn costs: it is the window the
+     file is seen through, not a share of the track. */
+  height: calc(100% / (var(--stops) * var(--turn)));
+}
+
+/* The desk the book sits on. Without it the binder ran into the bottom of the
+   window, which reads as the page being cut off by the browser rather than as
+   an object with room around it. */
+.rolodex {
+  padding-bottom: 1.6rem;
+}
+
+/* The cards' own box, and where the perspective lives.
+
+   Perspective applies to an element's own children and no further, so it
+   belongs on the leaves' direct parent. On the scroll container it reached the
+   track and stopped, and the cards rotated flat — a rotateX with no
+   perspective is an orthographic squash, which reads as the card getting
+   shorter rather than as it turning away.
+
+   The vanishing point sits high, near the axle, because that is where your eye
+   is when you look down at one of these on a desk. */
+.rolodex-cards {
+  position: absolute;
+  inset: 0;
+  /* A long lens. The page turns toward the eye and perspective magnifies
+     whatever comes closer; the fix used to be a `translateZ` pushing it back
+     as it went, which is wrong because a translate moves the whole element —
+     the punched holes with it — so the page slid off the rings it is locked
+     to. Nothing may move the hinge, so the swelling is paid for with distance
+     instead. At six thousand the worst point of the turn is a few per cent. */
+  perspective: 6000px;
+  perspective-origin: 50% 6%;
+  /* No clip. It used to be what took a leaving page off the screen, and
+     `backface-visibility` does that now — a page vanishes the moment its blank
+     back comes round. Keeping it cost more than it gave: a page turning toward
+     the eye grows, and a box the size of the page cut the turn off at its own
+     edges, which is the animation touching the end of the page. The scroller
+     above clips at the window, which is the only boundary a page should meet.
+
+     `preserve-3d` because a clip would flatten the stack in here into one
+     plane, and the whole file is nested rotations. */
+  transform-style: preserve-3d;
+}
+
+/* Length and snap targets. They are never seen. */
+.rolodex-stop {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  /* One stop is one turn's worth of scrolling. The frame loop measures the
+     step off this element rather than assuming, so slowing the turn is this
+     number and nothing else. */
+  height: calc(100% / var(--stops));
+  scroll-snap-align: start;
+  pointer-events: none;
+}
+
+/* The page, inset from the frame. The margins are where the binding shows.
+
+   No background and no clipping on the leaf itself: it is the hinge and the
+   frame of reference, and the tab has to be allowed to stand above it. The
+   sheet inside is the paper. */
+.leaf {
+  position: absolute;
+  top: var(--axle);
+  /* Room under the foot for the stack *and* some dark after it. At 1.1rem the
+     stack of a full file filled the gap exactly and the page sat on the bottom
+     of the window with nothing under it. */
+  bottom: 2.5rem;
+  left: var(--page-inset);
+  right: var(--page-inset);
+  /* The axle runs along the top edge, where the real one is. About the centre
+     instead and the pages spin like a coin. */
+  transform-origin: 50% 0%;
+  /* Past ninety degrees a card is showing its back, and there is nothing on
+     the back. This takes it off the screen at exactly that point, which is why
+     nothing here ever has to fade — and a card at rest is therefore never
+     showing what is behind it. */
+  backface-visibility: hidden;
+  /* No `transform-style`, here or on anything inside. The page takes one
+     rotation and there is nothing nested to compose, so the perspective on
+     the stage is the whole of the 3D — and a standing 3D context is answered
+     on a click by the wrapper rather than by the control inside it. */
+  /* `will-change` is set by the frame loop on the few pages near the turn and
+     cleared on the rest — see Rolodex.jsx. Declared here it promoted all
+     twenty-two to their own compositor layer and held them there, which is
+     GPU memory spent on pages nobody is looking at. */
+}
+
+/* The paper.
+
+   It was the first hinge of the bend once. The bend is gone — see Rolodex.jsx
+   for what it cost — so this is simply the sheet: the thing the punches are in
+   and the thing that throws the shadow. */
+.leaf-sheet {
+  position: absolute;
+  inset: 0;
+  /* A flex column, and this was the bug behind the controls running off the
+     foot of the page. The band inside asks for `flex: 1` and a parent that is
+     not a flex container simply ignores it — so the band took its content's
+     height, the artboard never had a reason to shrink, and the last row of
+     sliders sat forty-three pixels below the paper being clipped by it. */
+  display: flex;
+  flex-direction: column;
+  transform-origin: 50% 0%;
+  /* Switched on by the frame loop only while this page is turning — see the
+     note on `.leaf`. */
+  backface-visibility: hidden;
+  /* The page is the sheet its folder holds, so it is tinted from the same
+     entry the tab is coloured from — see lib/folders.js. Mixed well down into
+     white: the artwork has to stay the only saturated thing on the screen, and
+     a page in the folder's own colour would be a sheet of oxblood card with a
+     drawing on it. Falls back to plain white, so a card rendered outside the
+     file is still paper. */
+  background: var(--sheet, var(--color-page));
+  /* Everything on the card inherits the ink chosen for this colour of card.
+     The artboard sets its own colours back, so the picture is unaffected. */
+  color: var(--sheet-ink, var(--color-ink));
+  /* The soft grey is a *colour*, not a surface, so it can be re-pointed for the
+     whole card: hints, units and the zero-labels all follow the sheet. The
+     hard ink is deliberately left alone — the pill buttons set their own light
+     ground and would end up light-on-light if it moved with the card. */
+  --color-ink-soft: color-mix(in srgb, var(--sheet-ink, var(--color-ink)) 62%, var(--sheet, #fff));
+  /* The same on all four corners, and a third of what the panels use. A sheet
+     of paper has one corner radius; two big ones at the foot and square at the
+     head is a card, not a page. */
+  border-radius: var(--radius-sheet);
+  overflow: hidden;
+  /* Lifted off the stack behind it. The one shadow in the whole interface, and
+     it is here because this is the one place something is genuinely raised —
+     a sheet of paper in front of other sheets of paper. */
+  /* At rest, the lift of one sheet off a stack. Turning, `--cast` grows with
+     the angle and the shadow reaches down the page below it — see Rolodex.jsx.
+     A page that turns without throwing anything is a picture changing, not a
+     page moving. */
+  box-shadow:
+    0 calc(1.4rem + var(--cast, 0) * 5rem) calc(2.6rem + var(--cast, 0) * 6rem)
+      rgb(0 0 0 / calc(0.45 + var(--cast, 0) * 0.3)),
+    0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+/* The eyelet: the punch and the metal collar round it, on the paper.
+
+   It belongs to the page, not to the binder, so it turns with the sheet — a
+   hole that stays put while the paper moves is not a hole. The middle is the
+   colour of the desk, because that is what you see through one. */
+.leaf-hole {
+  position: absolute;
+  top: calc(var(--punch) - var(--eyelet) / 2);
+  width: var(--eyelet);
+  height: var(--eyelet);
+  margin-left: calc(var(--eyelet) / -2);
+  border-radius: 50%;
+  background: #0b0b0d;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+
+
+@media (max-width: 63.99rem) {
+  .leaf {
+    bottom: 1.2rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The binding
+
+   Four punches, four rings, and the edges of the stack showing underneath.
+   Nothing at the ends: this is a notebook, and a notebook has no machine — the
+   axle and the two knurled knobs it used to have were the only things on the
+   page pretending to be a photograph of something.
+--------------------------------------------------------------------------- */
+
+.rolodex-stage {
+  /* Where the rings run, and therefore where the page hangs and what it bends
+     about. Enough room above it for two rows of tabs and no more: everything
+     above the binding is height the artwork is not getting. */
+  /* Three bands, and they must not share space. The binding takes a thin
+     strip at the top, the page takes everything it can, and the index hangs
+     off the foot. The reference is nearly all paper and a few millimetres of
+     metal, which is only achievable by giving the furniture as little as it
+     can be given. */
+  /* The distance between the two holes, and therefore the size of the ring.
+
+     It was 1.45rem, and once the wire was made to span hole to hole rather
+     than being given a fixed length, that gap was what the ring had to reach
+     across: 51px of wire for 13px of loop, which is not a binding, it is four
+     pins. A ring binder's two holes are close together — that is what lets the
+     ring be a ring — so the page moved up to meet the bar. The wire came back
+     to the size it had before, now centred on the punch instead of hanging
+     below it, and the artwork gained the ten pixels the gap was spending. */
+  --bind: 0.88rem;
+  --axle: var(--bind);
+  /* From the page's top edge down to the middle of a punch. The eyelet and the
+     wire both measure from this, so they cannot drift apart. */
+  --punch: 0.44rem;
+  /* The wire is not given a length any more — it is given its two ends.
+
+     It used to be a fixed 2.1rem, chosen so the loop "rises until the punch
+     sits inside its opening". Measured, it did not: the punch in the masthead
+     sat at the very top of the band and the middle of the loop's opening sat
+     9.9px below it, so the two read as a hole in a bar with a separate ring
+     hanging under it — which is what a ring binder must never look like.
+
+     A ring passes through both holes, so both holes are what set it. The
+     opening is centred on the masthead punch, at the top of this band, and the
+     feet end on the page's eyelet at `axle + punch` below it. Everything
+     between is arithmetic on the artwork's own proportions: in the 26x40
+     viewBox the arc centre is at y=15 and the legs end at y=40, so the span
+     between the two holes is 25 of the 40 units the wire is tall. */
+  --wire-span: calc(var(--axle) + var(--punch));
+  --wire-h: calc(var(--wire-span) * 40 / 25);
+  --eyelet: 0.42rem;
+}
+
+/* ---------------------------------------------------------------------------
+   The binding
+
+   Four punches and four rings, and the page hangs off them. No axle and no
+   knobs: this is a notebook, and a notebook has nothing at the ends.
+--------------------------------------------------------------------------- */
+
+/* The punches in the masthead.
+
+   Same insets and same four fractions as the eyelets in the paper, so a wire
+   leaves a hole in the sheet and arrives at a hole in the bar without either
+   knowing about the other. Nothing is drawn between them and nothing needs to
+   be: two holes on one line read as one binding.
+
+   Below the bar's own bottom edge by half their height, so each one is cut by
+   it — a hole punched *through* the edge rather than a dot sitting near it. */
+.header-punches {
+  position: absolute;
+  left: var(--page-inset);
+  right: var(--page-inset);
+  bottom: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.header-punch {
+  position: absolute;
+  bottom: calc(var(--hole) * -0.5);
+  width: var(--hole);
+  height: var(--hole);
+  margin-left: calc(var(--hole) * -0.5);
+  border-radius: 999px;
+  /* What shows through a hole in the masthead is the desk behind it, which is
+     the same black the file sits on. The inner shadow is the thickness of the
+     card the hole is punched in — without it a hole is a dot. */
+  background: #0b0b0d;
+  box-shadow: inset 0 1px 1.5px rgb(0 0 0 / 0.6);
+}
+
+.binder {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+
+/* The wire the page hangs from.
+
+   Named `binder-wire`, not `ring`. Tailwind owns `ring` — it is the utility for
+   a focus halo, `box-shadow: 0 0 0 1px currentColor` — and taking the name for
+   our own put a one-pixel black box round all four of them, which took three
+   passes to find because nothing in this stylesheet draws one. Anything here
+   that shares a word with a utility is a bug waiting to be noticed on a
+   screenshot.
+
+   In front of everything, and it never turns: the wire is the binder, the
+   eyelet is the paper. */
+.binder-wires {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--page-inset);
+  right: var(--page-inset);
+  z-index: 900;
+}
+
+.binder-wire {
+  position: absolute;
+  /* Hung from its own opening rather than stood on its feet. The arc centre is
+     15 of 40 units down the box, so lifting the box by that much puts the
+     opening on this band's top edge — which is the masthead's bottom edge, and
+     therefore the middle of the punch. The feet then land on the eyelet by
+     construction, because the height is the distance between the two. */
+  top: calc(var(--wire-span) * -15 / 25);
+  height: var(--wire-h);
+  width: calc(var(--wire-h) * 26 / 40);
+  margin-left: calc(var(--wire-h) * -13 / 40);
+  overflow: visible;
+}
+
+.binder-wire-band {
+  fill: none;
+  stroke: #b9bec7;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+/* One short arc of brighter metal on the inside of the bend. A wire with no
+   highlight at all reads as a drawn line rather than as wire. */
+.binder-wire-light {
+  fill: none;
+  stroke: #f2f4f7;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+/* ---------------------------------------------------------------------------
+   The index, as a shelf of folders under the page
+
+   Ten to a row, then it wraps. The folders overlap the way filed ones do, so a
+   row of ten is nothing like ten folder widths — which is the only reason ten
+   of them fit at a size their numbers can be read at.
+
+   The shape is the supplied drawing, used as a mask rather than drawn as an
+   <img> or rebuilt as a clip-path polygon. A mask keeps the curves exactly as
+   they were authored, takes its colour from the element so twenty-two folders
+   are twenty-two background values and one file, and — the part a clip-path
+   cannot do — leaves `drop-shadow` able to follow the real silhouette instead
+   of the box.
+--------------------------------------------------------------------------- */
+
+.style-shelf {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Rows lap upward, so a row sits on the one behind it rather than beside it.
+     The shelf is a stack seen from the front, not a table. */
+  gap: 0;
+  padding: 0.35rem 1.1rem 0;
+  overflow: hidden;
+  /**
+   * The drawer sits lower than the window, by exactly the height of a pull.
+   *
+   * The front row used to end on the footer — folder bottom at window bottom,
+   * to the pixel — which is right until something moves. The folder you are on
+   * rises about nine pixels, and those nine pixels came off the bottom: a dark
+   * strip opened under it, on the one edge where there is nothing behind but
+   * desk. Pushed down by more than the pull, a raised folder still reaches past
+   * the edge and the strip never appears.
+   *
+   * A transform rather than a margin, so the shelf keeps the height it takes in
+   * the layout and only what is drawn moves. The overflow above clips whatever
+   * goes past the bottom, which is a folder's foot — the part with nothing on
+   * it.
+   */
+  /* Nothing. The drawer sits on the footer.
+
+     This used to push the shelf below the window so that a folder rising on
+     selection could not open a dark strip under itself. Nothing rises any
+     more — the lift went when the selected folder stopped jumping the queue,
+     and selection is said with the shadow instead — so the push was protecting
+     against an animation that no longer exists, and paying for it by cutting
+     the bottom off every number in the front row. */
+  --pull: 0rem;
+  transform: translateY(var(--pull));
+  /* The two folders, as drawn: same width, and the deeper one carries its
+     extra 44 units entirely at the foot, which is exactly the part that ends
+     up hidden behind the front row. */
+  --front-aspect: 4.26;
+  --back-aspect: 3.805;
+
+  /**
+   * The drawer's arithmetic, stated once.
+   *
+   * Ten folders have to come to the row, so the pitch follows from the width:
+   * w + 9p = 100. Everything else is derived from those two, which is the only
+   * way the seam offset and the head stay right when the size changes — they
+   * were three separate numbers and every resize needed all three re-solved.
+   *
+   * The back row is far wider than the front at the *same* pitch, and that is
+   * not a mistake. A folder's top edge is only 49.8% of its width — the
+   * shoulders slope away — so at a pitch of 9.48% two adjacent heads missed
+   * each other and the desk showed between them as black wedges. The seam
+   * offset needs the pitches equal, so the width is what had to give: at 19.6%
+   * a top edge is 9.76%, just over the pitch, and the heads touch. What it
+   * costs is a back folder mostly hidden behind its neighbour, which is what a
+   * filed folder is.
+   */
+  --front-w: 14.64%;
+  /* What is left of the row once one folder has had its width, shared between
+     the gaps between centres. It was the answer to w + 9p = 100 written out as
+     a number, which was correct for exactly ten folders and silently wrong for
+     any other count — and the count changes when a style is added. */
+  --pitch: calc((100% - var(--front-w)) / (var(--per-row, 10) - 1));
+  /* The back row is the same width as the front row.
+
+     It was 19.6% — half as wide again — so that adjacent heads would touch and
+     no desk showed between them. That was the wrong thing to optimise: the
+     black between two shapes is separation, not a hole, and a row of heads
+     with none of it reads as one painted band rather than as nine folders. At
+     the same width as the front row the shoulders leave the same wedge of desk
+     between them that the front row has, which is the whole point of a shape
+     with shoulders.
+
+     It also gives the number back its place. A folder 19.6% wide at a 9.5%
+     pitch is half-covered by its neighbour, so the number had to sit off to
+     one side of its own shape to be seen at all; at the same width as the
+     front row the overlap is a third, and a number centred on the shape is
+     clear of it. */
+  --back-w: var(--front-w);
+  /* How much of a back folder shows above the front row, as a share of the
+     row's width — the same unit as everything else here, so it keeps its
+     proportion at every window size. */
+  /* How much of a back folder shows above the front row.
+
+     As little as the number allows, because every pixel of head is a pixel of
+     the wedges between the back shapes that the front row is not covering.
+     Those wedges are the black between the rows, and there is a floor under
+     how far this can go: two of these shapes only touch below 45% of their
+     height, while a number centred on the shape sits at 50% and reaches up to
+     31%. So the top of a centred number is always inside the region where the
+     shapes have not met yet, and no amount of lowering closes it — closing it
+     entirely means either a number that is not centred on its shape, or back
+     folders half again as wide, which is what covers the number in the first
+     place.
+
+     Lowering does help, and the first measurement of it said otherwise because
+     it measured the wrong thing: the wedges stay the same *share* of the band
+     while the band gets shorter, so a percentage is flat while the actual area
+     of desk falls. Measured as area, on a 4px lattice across the whole shelf:
+
+       51px of head  9872    45px  9104    41px  8448
+       36px          7792    32px  6592    28px  5936
+
+     36px. It is a fifth less desk than the number needed to stand entirely
+     clear, and it costs about one pixel of digit — the front row laps 8px into
+     the number's box, and seven of those eight are the empty space under the
+     baseline, which these numerals have no descenders to use.
+
+     Going further keeps paying: 32px would take another sixteen per cent off.
+     It also starts taking real ink, five pixels of a twenty pixel cap, and a
+     number with its feet cut off is not a number that has been filed. */
+  /* How much of a back folder shows above the front row.
+   *
+   * Lowered from 2.6%. The shape's shoulders are sloped over its top 40%, so
+   * two folders side by side do not meet until that far down and the desk
+   * shows through the wedge between them — which is what the drawer behind the
+   * row used to cover, and what has been visible since it was taken out.
+   *
+   * Lowering the row cannot close that wedge, only shorten it: the front row
+   * comes up over the bottom of it, so the black left showing is the part
+   * above the front row's edge. Counted as points of exposed desk across the
+   * band, 2.6% leaves 9202 and 2.4% leaves 8560.
+   *
+   * Counted as a *share* of that band it is 12% either way — which is the
+   * reading that says nothing changed, and it is wrong, because the band is
+   * shrinking along with the black in it. Area is what an eye sees.
+   *
+   * The floor is the numbers, and it is very close. The back row's number is
+   * centred on its own shape and has no slack to give: at 2.2% the front row
+   * is already through the baseline of the digits and at 2% it has taken half
+   * of them. 2.4% is the last step that leaves them whole, which is why the
+   * move is as small as it is.
+   *
+   * The other lever is --back-w: wider folders overlap sooner and so meet
+   * higher up, which shortens the wedge without moving either row. At 18.5%
+   * the same band drops to 5434. Not taken here — it changes the size of every
+   * folder, and only the row's height was asked about. */
+  --head: 2.4%;
+}
+
+.shelf-row {
+  display: flex;
+  /* Never wraps inside a row: the wrapping is done by the component, ten at a
+     time, so a row is always the same length and the colour cycle lines up
+     underneath itself. */
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+/* The back row: deeper, and shifted along by half a folder.
+
+   The shift is the point. Lined up, the row behind would sit squarely behind
+   the row in front and show nothing but a dark seam; offset by half, its
+   shoulders come up in the gaps between the front folders and read as one
+   continuous band running behind them. Deliberately out of step, which is the
+   only way two rows of the same object stop looking like a table. */
+/* The back row: filed behind, and shifted along by half a folder.
+
+   The shift is the point. Lined up, the row behind shows nothing but a dark
+   seam; offset by half, each head comes up in a gap and the two read as a
+   drawer rather than as a table with two shelves. */
+/* What is behind the back row.
+
+   The wedges between two back folders are the shapes' own shoulders, and they
+   cannot be closed: two of these only touch below 45% of their height, while a
+   number centred on the shape sits at 50% and reaches up to 31%, so the top of
+   a centred number is always in the part where the shapes have not met. Making
+   them wide enough to meet is what buried the numbers under their neighbours in
+   the first place.
+
+   So the wedges stay and what shows through them changes. Behind the front row
+   there is the back row, which is why nothing reads as a hole down there; behind
+   the back row there was the desk. There is a drawer now — one shade off black,
+   warm rather than neutral, dark enough to stay furniture and far enough from
+   the desk that a gap between two folders reads as depth instead of as a hole
+   cut in the shelf. */
+/* The drawer behind the back row is gone.
+
+   It was a warm near-black rectangle filling the wedges between back folders,
+   and it worked for that — but a folder tab is a cut shape, and a rectangle
+   behind a row of cut shapes shows above every sloped shoulder. What that adds
+   up to across nine of them is a brown band running the width of the shelf,
+   which is a band nobody drew on purpose and the first thing the eye finds
+   down there. The wedges show the desk again; they are small, and a band is
+   not a smaller price than they are. */
+
+.shelf-row-back {
+  position: relative;
+  /* Exactly half a pitch.
+
+     A folder occupies 11% of the row and laps the next by 1.1%, so the pitch
+     — centre to centre — is 9.9%, and half of it is 4.95%. That puts each
+     back folder's centre on the seam between the two in front of it rather
+     than near it: the head comes up in the middle of the gap, which is the
+     only offset that reads as deliberate instead of as a row that slipped.
+
+     Moved, not margined. A `margin-left` shifts the row by narrowing it, and
+     the folders inside are sized as a percentage *of the row* — so the back
+     row got a shorter pitch than the front one and the two drifted apart by
+     seven pixels a folder, ending 58px out by the ninth. A transform moves the
+     row without resizing it, so both rows keep the same pitch and the offset
+     stays exactly half of it the whole way along. */
+  /* Half a pitch, *and* the difference in width.
+
+     Aligning the two rows means putting a back folder's centre on the seam
+     between two front ones, and a centre is left + width/2. The rows no longer
+     share a width, so half a pitch alone left the back row 35px out: the term
+     that was zero while the widths matched is (front − back) / 2, and it has
+     to be there whether or not it happens to vanish. */
+  transform: translateX(calc((var(--front-w) - var(--back-w)) / 2 + var(--pitch) / 2));
+}
+
+.shelf-row-back .shelf-tab {
+  /* Wider than the front row at the same pitch, so the heads meet — see the
+     note on --back-w. */
+  flex: 0 0 var(--back-w);
+  margin-right: calc(var(--pitch) - var(--back-w));
+  aspect-ratio: var(--back-aspect) / 1;
+  -webkit-mask-image: url('/folder-back.svg');
+  mask-image: url('/folder-back.svg');
+}
+
+/* And the front row is pulled up over it, so only the back row's head shows.
+
+   How much head is not a matter of taste. The back folder's number sits in the
+   top 37% of it — about 15px — and the folder you are on rises 22% of its own
+   height, about 8px, which comes straight off the head of whatever is behind
+   it. At 11px of head the pulled folder covered two back numbers outright:
+   unreadable, and unclickable, because the raised folder takes the press.
+   Seventeen leaves the number clear with the front row pulled or flat, and
+   nothing more: at twenty-four there were seven pixels of back folder showing
+   below its own number and above the front row, which is a dark band between
+   two rows of card and reads as a gap rather than as depth.
+
+   Expressed against the folder rather than in rem, because the folder's height
+   is a share of the window and a fixed lift is not. At 1rem it was right on a
+   desktop and larger than the entire back folder on a phone, where 39px of
+   width makes a 10px folder — the front row swallowed the back row whole and
+   the last of its numbers took the press meant for it.
+
+   A folder is 11% of the row wide and the deep one is 3.805 times as wide as
+   it is tall, so its height is 2.891% of the row. Six tenths of that is left
+   showing, so the margin is the other four: −1.16%. Percentage margins resolve
+   against the containing block's width, which is the row — so this is the same
+   fraction of the same folder at every size. */
+.shelf-row-front {
+  /* Follows the folder, which just grew: the deep one is width / 3.805 tall,
+     so 12.1% of the row makes 3.18%, and leaving the same 0.426 of it showing
+     puts the margin at -1.825%. */
+  margin-top: calc(var(--head) - var(--back-w) / var(--back-aspect));
+}
+
+/* And its number sits in its lower half.
+
+   The back row is the deeper of the two and it laps under the front one, so
+   the top of its shape is behind a folder. Put the number where the front row
+   puts it and eight of the nine were covered — unreadable, and worse,
+   unclickable, because the folder in front takes the press. Down here it is
+   below the front row's bottom edge, which is the whole of the back row you
+   can actually see. */
+/* The back folder's number lives in its head, because the head is all of it
+   that can be seen. Put where the front row puts its own, every one of them
+   was behind a folder: unreadable, and worse unclickable, since the folder in
+   front takes the press. */
+/* The back folder's number, in the part of the head that can be seen.
+
+   Folders in a row lap left over right, so the first half of a back folder is
+   behind the one before it: with the back row now twice as wide as its pitch,
+   51.6% of each is covered. The number sat at 30% to 80% — the plateau — and
+   its left half went under the neighbour, taking the press with it, which is
+   how N.14 became unclickable. Between the neighbour's edge and the end of the
+   plateau there is 52% to 80% of the folder, and that is where it goes.
+
+   The head is what shows above the front row — 0.475 of the folder, since the
+   front row laps the rest — so the box is that, from the very top. It was 2%
+   to 32%, which centres the number two and a half pixels high in a nineteen
+   pixel head: not wrong enough to name, and visible as soon as you look along
+   the row, because nine of them are wrong in the same direction. */
+.shelf-row-back .shelf-mark {
+  top: 0;
+  /* Nothing. The back row's number is centred on its shape exactly as the
+     front row's is, and the rule above does all of it — this block used to
+     push it into the head and off to the right, which was a workaround for a
+     back folder so wide its neighbour covered the middle of it. */
+}
+
+.shelf-tab {
+  position: relative;
+  /* A tenth of the row and no more, whatever else is in it.
+     `flex: 1 1 0` was the obvious way to say "ten across" and it is wrong at
+     the end: the last row holds two folders, and two folders sharing a row
+     each came out five times the size of the twenty above them. A folder is a
+     folder. A short row leaves the drawer half empty, which is what a half
+     empty drawer looks like.
+
+     Eleven per cent each with a lap of one and a tenth: ten of them come to
+     110% less nine laps, which is the row. The folder's own proportions are
+     4.26:1 and the height follows the width, so the shape is never stretched. */
+  /* A tenth more folder than before, in the same row.
+
+     Ten of them still have to come to 100%, so the lap does the paying: at
+     12.1% wide the pitch is (100 - 12.1) / 9 = 9.767%, which makes the lap
+     2.333% instead of 1.111%. Each folder is 10% larger in both directions —
+     the height follows the width through the aspect ratio — and rather more of
+     each one hides behind its neighbour, which is what a fuller drawer looks
+     like. */
+  flex: 0 0 var(--front-w);
+  min-width: 0;
+  /* Set by the row: the front one is shallow, the row behind it is deep. */
+  aspect-ratio: var(--front-aspect) / 1;
+  margin-right: calc(var(--pitch) - var(--front-w));
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-mask: url('/folder-front.svg') no-repeat center / 100% 100%;
+  mask: url('/folder-front.svg') no-repeat center / 100% 100%;
+  /* `drop-shadow` and not `box-shadow`: a box shadow is drawn from the border
+     box, which here is a rectangle the folder does not fill. A filter follows
+     the mask. */
+  /* Small, and on every folder including the ones behind. It is what separates
+     two pieces of card of similar tone where they lap — without it the drawer
+     is a flat colour chart, and the lap between a back head and the front row
+     is exactly where the eye needs the edge. */
+  filter: drop-shadow(0 1.5px 2px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.28));
+  /* So the rise is a rise and not a jump. Short, because it happens on every
+     press and a long one turns navigation into a wait. */
+  transform-origin: 50% 100%;
+  transition:
+    transform 240ms var(--ease-snap),
+    filter 240ms var(--ease-snap);
+}
+
+/* And the front row throws its shadow *backwards*, onto the heads behind it.
+
+   Every other shadow here falls downward, which is where the light is — but
+   the row behind is above and beyond this one, so a downward shadow lands on
+   nothing and the lap between them stayed a hard seam. One upward cast is what
+   makes the front row read as standing in front of the back one rather than
+   as being printed next to it. */
+.shelf-row-front .shelf-tab {
+  filter: drop-shadow(0 1.5px 2px rgb(0 0 0 / 0.4)) drop-shadow(0 -3px 4px rgb(0 0 0 / 0.34));
+  transition:
+    transform 260ms var(--ease-snap),
+    filter 260ms var(--ease-snap);
+}
+
+.shelf-tab:last-child {
+  margin-right: 0;
+}
+
+/* No lift, on hover or on the one you are on.
+
+   A raised folder is a lovely gesture and it cannot work here: the shelf sits
+   on the desk, so anything that rises leaves desk behind it — a hard black
+   strip under the folder you just chose, which is the one folder that should
+   look most settled. Weight says it instead. */
+.shelf-tab:hover {
+  filter: drop-shadow(0 1.5px 2px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.28))
+    brightness(1.06);
+}
+
+/* The one you are on: it grows out of the drawer.
+
+   It rises, and it cannot open a dark strip under itself while doing it,
+   because it does not move — it *scales*, about its own bottom edge. The foot
+   stays exactly where it was and everything above it lifts, which is a rise
+   that has nowhere to leak from. Translating it up by the same amount would
+   take its foot with it, and on the front row the foot is the bottom of the
+   window.
+
+   Vertical only. A uniform scale would widen it too, and a folder laps its
+   neighbour to within a few pixels of that neighbour's number — six pixels of
+   extra width is enough to start covering the next one along. */
+.shelf-tab-on {
+  transform: scaleY(1.12);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5)) drop-shadow(0 7px 11px rgb(0 0 0 / 0.42));
+}
+
+/* The number rides the scale back — in size *and* in place.
+
+   Undoing the stretch is the obvious half: 1/1.12. The half that is easy to
+   miss is that scaling a folder about its foot also carries everything inside
+   it upward, so the selected folder's number left the row's baseline and sat
+   three pixels above its neighbours. Every label on one baseline was the
+   thing that was asked for, and one of them quietly leaving it is worse than
+   no animation at all.
+
+   Six per cent puts it back: the mark's box is the full height of the folder,
+   the centre sits at half of it, and a scale of k moves that centre by
+   (k-1)/2 of the height — 0.06 at 1.12. The translate is inside the child's
+   own 0.893 and the parent's 1.12, and those two multiply to one, so six per
+   cent in here is six per cent on the screen. */
+.shelf-tab-on .shelf-mark {
+  transform: scaleY(0.893) translateY(6%);
+}
+
+.shelf-mark {
+  transition: transform 240ms var(--ease-snap);
+}
+
+.shelf-mark {
+  /* On the raised plateau, which runs from 30% to 80% of the shape's width —
+     the rest is the lower shelf and the falling shoulder, and a number set
+     across either of those sits half off the folder. */
+  position: absolute;
+  /* Centred on the shape, on both axes.
+
+     Horizontally the box is the plateau — 30% to 79.8% of the width — whose
+     centre is 54.9%, which is where the flat top of this shape actually is.
+     Vertically it is the whole folder, so the number sits on the middle of the
+     shape rather than in the upper part of it.
+
+     The box is wider than the number and the number is centred in it, so the
+     box is only where the centre is; it does not clip. It did, at 30px of box
+     for 33px of type, which shows up as a number with its feet shaved rather
+     than as anything obviously wrong. */
+  left: 30%;
+  right: 20.2%;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-label);
+  /* 700 is the heaviest weight of this face that is actually loaded, so the
+     rest of the thickness is a hairline stroke in the same ink rather than a
+     synthesised bold — which smears a number at this size instead of
+     thickening it. Half a pixel is enough at double the size. */
+  font-weight: 700;
+  -webkit-text-stroke: 0.5px currentColor;
+  /* Twice what it was. The plateau is wide enough for it because the folders
+     grew twice on the way here; the head of the back row had to be opened up
+     to match, which is the one thing this size costs. */
+  font-size: clamp(1.28rem, 1.96vw, 1.86rem);
+  /* Tighter than the face sets it. Two digits and a full stop at this size read
+     as three separate objects at the default fit; pulled in, "N.01" is one
+     mark, which is what a filing number is. */
+  letter-spacing: -0.055em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* The pages still under this one.
+
+   Depth is the count: the slab thins as the file does, so the last card sits
+   on nothing and the first sits on twenty-one. Before, it was a fixed height
+   that said "plenty" as loudly on the last card as on the first, which is the
+   one thing a stack is there to tell you. */
+.binder-stack {
+  position: absolute;
+  left: calc(var(--page-inset) + 1.1rem);
+  right: calc(var(--page-inset) + 1.1rem);
+  /* Growing *down* from the card's bottom edge, not up from it. Anchored to
+     the bottom it grew into the card and the binding draws over the cards, so a
+     full file buried the last two rows of controls under a pile of paper. */
+  top: calc(100% - 2.5rem);
+  /* Capped to the gap between the page's foot and the rack. At a page per
+     tenth of a rem a full file was two and a half rem tall and grew straight
+     through the tabs, which is what the foot of this looked like: a slab of
+     paper with an index buried in it. */
+  height: min(calc(var(--left) * 0.055rem), 1.15rem);
+  border-radius: 0 0 var(--radius-sheet) var(--radius-sheet);
+  /* One line per page. Sized off the same number, so a line is always a page
+     and the slab is never a texture pretending to be a count. */
+  background:
+    repeating-linear-gradient(
+      #f4f4f2 0 1px,
+      #b6b6b2 1px 2px,
+      #f4f4f2 2px 0.055rem
+    );
+}
+
+@media (max-width: 63.99rem) {
+  .rolodex-stage {
+    --bind: 1.1rem;
+    --punch: 0.36rem;
+    /* No --wire-h here. It used to be given its own smaller number, which was
+       a second place the two ends of the wire could disagree — and on a narrow
+       screen they did, by a different amount than on a wide one. The length now
+       follows --bind and --punch, so setting those two is setting all of it. */
+    --eyelet: 0.32rem;
+  }
+  .leaf {
+    bottom: 2rem;
+  }
+  .roller-axle {
+    left: 2rem;
+    right: 2rem;
+    height: 0.5rem;
+    top: calc(var(--axle) - 0.25rem);
+  }
+  .roller-hook {
+    width: 1rem;
+    height: 1.6rem;
+    margin-left: -0.5rem;
+    border-width: 0.24rem;
+    top: calc(var(--axle) - 0.5rem);
+  }
+  .binder-stack {
+    bottom: 0.85rem;
+    height: 0.9rem;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .rolodex-stage {
+    --knob: 2.3rem;
+    --axle: calc(var(--knob) / 2 + 0.3rem);
+  }
+  .leaf {
+    bottom: 1.4rem;
+  }
+  .binder-stack {
+    bottom: 0.55rem;
+    height: 0.6rem;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The shelf on a phone
+
+   Ten folders across 375px is 34px each before the lap, which is a number you
+   cannot read and a target you cannot hit. Five to a row instead — the
+   component still hands over rows of ten, and this splits each of them in two
+   by letting the row wrap, which keeps the colour cycle intact down the
+   column rather than resetting it.
+--------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+   The shelf on a phone
+
+   The drawer's depth is a thing a desktop has room for. Ten folders across
+   375px are 39px wide and so nine pixels tall, and a head six tenths of that
+   is six pixels with a number in it — which is not a number, and the front row
+   swallowed the back row whole.
+
+   So here the two rows stop overlapping and each wraps to five a line: every
+   folder is 75px and whole, every number is readable and pressable. The
+   half-pitch offset stays, because it still reads as filed rather than
+   tabulated — it is the *depth* that goes, not the arrangement.
+--------------------------------------------------------------------------- */
+
+@media (max-width: 47.99rem) {
+  .style-shelf {
+    padding: 0.25rem 0.6rem 0.7rem;
+  }
+  .shelf-row {
+    flex-wrap: wrap;
+  }
+  .shelf-tab {
+    /* Five to a line, never six, with the shift fitting inside the hundred.
+
+       Two conditions, and the first is easy to miss: a wrapping row packs by
+       the *outer* size, which includes the negative margin — so at a pitch of
+       16.578 six folders came to 99.5% and six were packed, while the sixth's
+       own lap then carried it fifty pixels off the right of the screen. The
+       pitch has to exceed a sixth of the row for five to be the answer.
+
+       At 16.8 that holds (six would need 100.8%), and the line comes to
+       4 x 16.8 + 24.4 + half a pitch for the back row's offset = exactly 100. */
+    flex: 0 0 24.4%;
+    margin-right: -7.6%;
+  }
+  /* Half a pitch again: 21% wide lapping 2%, so the pitch is 19%. */
+  /* Half a pitch again: 23.1% wide lapping 4%, so the pitch is 19.1%. */
+  /* What is behind the back row.
+
+   The wedges between two back folders are the shapes' own shoulders, and they
+   cannot be closed: two of these only touch below 45% of their height, while a
+   number centred on the shape sits at 50% and reaches up to 31%, so the top of
+   a centred number is always in the part where the shapes have not met. Making
+   them wide enough to meet is what buried the numbers under their neighbours in
+   the first place.
+
+   So the wedges stay and what shows through them changes. Behind the front row
+   there is the back row, which is why nothing reads as a hole down there; behind
+   the back row there was the desk. There is a drawer now — one shade off black,
+   warm rather than neutral, dark enough to stay furniture and far enough from
+   the desk that a gap between two folders reads as depth instead of as a hole
+   cut in the shelf. */
+/* The drawer behind the back row is gone.
+
+   It was a warm near-black rectangle filling the wedges between back folders,
+   and it worked for that — but a folder tab is a cut shape, and a rectangle
+   behind a row of cut shapes shows above every sloped shoulder. What that adds
+   up to across nine of them is a brown band running the width of the shelf,
+   which is a band nobody drew on purpose and the first thing the eye finds
+   down there. The wedges show the desk again; they are small, and a band is
+   not a smaller price than they are. */
+
+.shelf-row-back {
+  position: relative;
+    transform: translateX(8.4%);
+  }
+  /* Clear of the row behind it rather than lapped over it. */
+  .shelf-row-front {
+    margin-top: 0.3rem;
+  }
+  /* Both numbers fit at this size, so the prefix stays. */
+  .shelf-mark-prefix {
+    display: inline;
+  }
+  .shelf-row-back .shelf-mark {
+    top: 6%;
+    height: 56%;
+  }
+  .shelf-mark {
+    font-size: clamp(0.6rem, 2.5vw, 0.9rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The style's name
+
+   It was perforated: a dot screen clipped to the glyphs, so the letterform was
+   punched rather than drawn. It read well and it was the wrong thing to do
+   here. A label on a piece of work should not be a demonstration of the work —
+   the artwork three inches below it is already that, and a title competing
+   with it for the same trick makes the page look like two attempts at one
+   idea. Plain capitals, one weight, one face.
+--------------------------------------------------------------------------- */
+
+.leaf-title {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 1;
+  font-weight: 700;
+  /* Caps set tight look like a fence. */
+  letter-spacing: 0.07em;
+  /* The ink the card was measured for. It said `--color-ink` — plain black —
+     which was right while the sheet was white and is not right on a navy one:
+     the name came out at 3.2:1 on four of the nineteen pages, which is a
+     heading you have to lean in to read. */
+  color: var(--sheet-ink, var(--color-ink));
+}
